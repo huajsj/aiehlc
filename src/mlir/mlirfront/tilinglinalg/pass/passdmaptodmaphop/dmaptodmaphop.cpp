@@ -298,8 +298,8 @@ static LogicalResult lowerDataMovementOp(Operation *op, ConversionPatternRewrite
         }
         
         // Create hops between cores (if multiple cores)
-        for (int i = corePortsOutOps.size() - 2; i >= 0; --i) {
-            hops.push_back(rewriter.create<dmaphop::create_hop>(loc, corePortsOutOps[i], corePortsInValues[i]).getResult());
+        for (int i = corePortsOutOps.size() - 1; i >= 1; --i) {
+            hops.push_back(rewriter.create<dmaphop::create_hop>(loc, corePortsOutOps[i - 1], corePortsInValues[i]).getResult());
         }
     }
 

@@ -445,14 +445,14 @@ public:
     std::vector<Point> getReservedTilesForDataIo(int ioId) const;
     IHwResource* getrsc() {return resource_.get();};
     
-    // Register shim column and channel to ioId mapping
-    void registerShimChannelMapping(int shimCol, int channel, int ioId);
+    // Register shim column, channel, and direction to ioId mapping
+    void registerShimChannelMapping(int shimCol, int channel, DMADIRECTION direction, int ioId);
     
-    // Find ioId based on shim column and channel number
-    std::optional<int> findIoIdByShimChannel(int shimCol, int channel) const;
+    // Find ioId based on shim column, channel number, and direction
+    std::optional<int> findIoIdByShimChannel(int shimCol, int channel, DMADIRECTION direction) const;
     
-    // Find DataIO object by shim column and channel
-    std::shared_ptr<DataIO> findDataIOByShimChannel(int shimCol, int channel) const;
+    // Find DataIO object by shim column, channel, and direction
+    std::shared_ptr<DataIO> findDataIOByShimChannel(int shimCol, int channel, DMADIRECTION direction) const;
 
 private:
     void InitSHIMNocList();
@@ -466,15 +466,18 @@ private:
     std::unique_ptr<IHwResource> resource_;
     std::unordered_map<int, std::shared_ptr<DataIO>> DataIOMap;
     
-    // Hash function for (shimCol, channel) pair
-    struct ShimChannelHash {
-        std::size_t operator()(const std::pair<int, int>& p) const {
-            return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
+    // Hash function for (shimCol, channel, direction) tuple
+    struct ShimChannelDirHash {
+        std::size_t operator()(const std::tuple<int, int, DMADIRECTION>& t) const {
+            auto h1 = std::hash<int>()(std::get<0>(t));
+            auto h2 = std::hash<int>()(std::get<1>(t));
+            auto h3 = std::hash<int>()(static_cast<int>(std::get<2>(t)));
+            return h1 ^ (h2 << 1) ^ (h3 << 2);
         }
     };
     
-    // Mapping from (shimCol, channel) to ioId
-    std::unordered_map<std::pair<int, int>, int, ShimChannelHash> shimChannelToIoIdMap_;
+    // Mapping from (shimCol, channel, direction) to ioId
+    std::unordered_map<std::tuple<int, int, DMADIRECTION>, int, ShimChannelDirHash> shimChannelToIoIdMap_;
 };
 
 #endif // ROUTINGRESOURCE_H

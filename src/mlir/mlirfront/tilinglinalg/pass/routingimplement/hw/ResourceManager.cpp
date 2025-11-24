@@ -138,8 +138,8 @@ std::shared_ptr<DataIO> ResourceMgr::createDataIO(IOType tp, int r, int c, DMADI
             dataioptr->setshimport(shimport);
         }
         
-        // Register the shim column and channel to ioId mapping
-        registerShimChannelMapping(c, channel, dataioptr->id());
+        // Register the shim column, channel, and direction to ioId mapping
+        registerShimChannelMapping(c, channel, dir, dataioptr->id());
     }
     return dataioptr;
 }
@@ -541,14 +541,14 @@ bool ResourceMgr::reserveTiles(int ioId, int numTiles, ReservationStrategy strat
     return false;
 }
 
-// Register shim column and channel to ioId mapping
-void ResourceMgr::registerShimChannelMapping(int shimCol, int channel, int ioId) {
-    shimChannelToIoIdMap_[std::make_pair(shimCol, channel)] = ioId;
+// Register shim column, channel, and direction to ioId mapping
+void ResourceMgr::registerShimChannelMapping(int shimCol, int channel, DMADIRECTION direction, int ioId) {
+    shimChannelToIoIdMap_[std::make_tuple(shimCol, channel, direction)] = ioId;
 }
 
-// Find ioId based on shim column and channel number
-std::optional<int> ResourceMgr::findIoIdByShimChannel(int shimCol, int channel) const {
-    auto key = std::make_pair(shimCol, channel);
+// Find ioId based on shim column, channel number, and direction
+std::optional<int> ResourceMgr::findIoIdByShimChannel(int shimCol, int channel, DMADIRECTION direction) const {
+    auto key = std::make_tuple(shimCol, channel, direction);
     auto it = shimChannelToIoIdMap_.find(key);
     if (it != shimChannelToIoIdMap_.end()) {
         return it->second;
@@ -556,9 +556,9 @@ std::optional<int> ResourceMgr::findIoIdByShimChannel(int shimCol, int channel) 
     return std::nullopt;
 }
 
-// Find DataIO object by shim column and channel
-std::shared_ptr<DataIO> ResourceMgr::findDataIOByShimChannel(int shimCol, int channel) const {
-    auto ioIdOpt = findIoIdByShimChannel(shimCol, channel);
+// Find DataIO object by shim column, channel, and direction
+std::shared_ptr<DataIO> ResourceMgr::findDataIOByShimChannel(int shimCol, int channel, DMADIRECTION direction) const {
+    auto ioIdOpt = findIoIdByShimChannel(shimCol, channel, direction);
     if (ioIdOpt) {
         int ioId = *ioIdOpt;
         auto dioIt = DataIOMap.find(ioId);

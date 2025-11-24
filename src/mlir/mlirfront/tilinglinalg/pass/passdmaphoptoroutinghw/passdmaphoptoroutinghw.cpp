@@ -779,7 +779,7 @@ struct DmaphopPathConversionPattern : public OpConversionPattern<dmaphop::create
             shimcol = shimPoint.c;
             
             // Try channel 0 first
-            dio = rm->findDataIOByShimChannel(shimcol, 0);
+            dio = rm->findDataIOByShimChannel(shimcol, 0, dmadir);
             
             if (!dio) {
                 // No existing DataIO found, create a new one
@@ -877,6 +877,7 @@ struct EraseOpPattern : public OpConversionPattern<OpType> {
 
 void DmaphopToRoutinghwPass::runOnOperation() {
     auto& ctx = getContext();
+    auto module = getOperation();
     ConversionTarget target(ctx);
     RewritePatternSet patterns(&ctx);
     
@@ -917,10 +918,25 @@ void DmaphopToRoutinghwPass::runOnOperation() {
     patterns.add<EraseOpPattern<routing::extract_data>>(&ctx);  // Erase routing::extract_data
     patterns.add<EraseOpPattern<routing::createdummytensor>>(&ctx);
     patterns.add<EraseOpPattern<routing::partitiontensor>>(&ctx);  // Erase routing::partitiontensor
-    
+
+    /*
+    FrozenRewritePatternSet frozenPatterns(std::move(patterns));
+    module->walk([&](scf::ExecuteRegionOp exec) {
+        //only deal with the routing_memo executeregionop
+        if (!exec->getAttrOfType<StringAttr>("routing_memo")) {
+            return;
+        }
+        exec->walk([&](routing::RoutingCreate routingcreate) {
+            if (failed(applyPartialConversion(routingcreate, target, frozenPatterns ))) {
+                llvm::outs() << "routing convert failed \n";
+            }
+        });
+    });
+    */
     if (failed(applyPartialConversion(getOperation(), target, std::move(patterns)))) {
         signalPassFailure();
     }
+    
 }
 
 DmaphopToRoutinghwPass::DmaphopToRoutinghwPass(RoutingTopology& rtopology):rtopology_(rtopology) {
